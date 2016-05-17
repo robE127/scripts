@@ -54,8 +54,8 @@ subprocess.call("date -s @" + str(fakeTime), shell=True)
 for d in range(1,92):
 	for h in range(1,4):
 		# Start a backup
-		print("Starting a backup at " + str(time.gmtime(fakeTime)))
-		#subprocess.call(START_BACKUP + agent, shell=True)
+		# print("Starting a backup at " + str(time.gmtime(fakeTime))) # This is just for debugging.
+		subprocess.call(START_BACKUP + agent, shell=True)
 		# Go forward in time by h hours
 		fakeTime = fakeTime + HOUR
 		subprocess.call("date -s @" + str(fakeTime), shell=True)
