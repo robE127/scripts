@@ -1,9 +1,8 @@
-#
-
-
 #!/usr/bin/python
 
 import subprocess, calendar, time
+
+# I recommend using this script with a fresh agent to avoid problems.
 
 # Constants for different amount of time periods in seconds
 HOUR = 3600
@@ -21,9 +20,11 @@ SAFE_RETENTION = "240000:240000:240000:240000"
 START_BACKUP = "snapctl foregroundStart "
 OFFSITE_CONTROL_KEY = ".offsiteControl"
 
+# Disclaimers
+print "This is a pretty dirty script. Do not use in production. Use on a freshly added system."
+
 # Prompt the user for the system to test with
 agent = raw_input("What existing agent do you want to test with:  ")
-testLength = raw_input("How many months of backups do you want to create: ")
 
 # Pause automatic backups for the agent
 backupPause = open(CONFIG_KEYS + agent + PAUSE_KEY, 'w')
@@ -46,7 +47,7 @@ subprocess.call("chmod 000 /etc/cron.d/datto-codebase-core", shell=True)
 
 # Get the current time, convert to EPOCH format, and start at fakeTime.
 realTime = calendar.timegm(time.gmtime())
-fakeTime = realTime - (MONTH * int(testLength))
+fakeTime = realTime - (MONTH * 3)
 startFakeTime = fakeTime
 subprocess.call("date -s @" + str(fakeTime), shell=True)
 
