@@ -30,15 +30,29 @@ retentionSettingsFile = open(CONFIG_KEYS + agent + RETENTION_KEY, 'w')
 retentionSettingsFile.write(SAFE_RETENTION)
 retentionSettingsFile.close()
 
-# Remove access to /etc/ntp.conf to prevent time from reverting
+# Remove access to /etc/ntp.conf and /etc/cron.d/datto-codebase-core to prevent time from reverting
 subprocess.call("chmod 000 /etc/ntp.conf", shell=True)
+subprocess.call("chmod 000 /etc/cron.d/datto-codebase-core", shell=True)
 
-# Run 3 backups
-for i in range(1,3):
-    # Start a backup
-	subprocess.call(START_BACKUP + agent, shell=True)
-	# Get the current time in EPOCH format
-	setTime = calendar.timegm(time.gmtime())
-	# Go back in time by i hours
-	setTime = setTime - (HOUR * i)
-	subprocess.call("date -s @" + str(setTime), shell=True)
+realTime = calendar.timegm(time.gmtime())
+fakeTime = realTime
+
+# Run 3 backups a day for roughly 3 months
+for d in range(1,92):
+	for h in range(1,4):
+		# Start a backup
+		#print("Starting a backup at " + time.gmtime(fakeTime))
+		subprocess.call(START_BACKUP + agent, shell=True)
+		# Go back in time by h hours
+		fakeTime = fakeTime - HOUR
+		subprocess.call("date -s @" + str(fakeTime), shell=True)
+	# Go back in time by (DAY * d) days from actual time each iteration
+	subprocess.call("ntpdate ntp.dattobackup.com", shell=True)
+	realTime = calendar.timegm(time.gmtime())
+	fakeTime = realTime - (DAY * d)
+	subprocess.call("date -s @" + str(fakeTime), shell=True)
+	
+# Return ntp config and time back to good state
+subprocess.call("ntpdate ntp.dattobackup.com", shell=True)
+subprocess.call("chmod 644 /etc/ntp.conf", shell=True)
+subprocess.call("chmod 644 /etc/cron.d/datto-codebase-core", shell=True)
