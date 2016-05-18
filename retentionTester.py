@@ -26,6 +26,9 @@ print "This is a pretty dirty script. Do not use in production. Use on a freshly
 # Prompt the user for the system to test with
 agent = raw_input("What existing agent do you want to test with:  ")
 
+# InhibitAllCron
+subprocess.call("touch /datto/config/inhibitAllCron", shell=True)
+
 # Pause automatic backups for the agent
 backupPause = open(CONFIG_KEYS + agent + PAUSE_KEY, 'w')
 backupPause.write("1")
@@ -74,3 +77,10 @@ subprocess.call("chmod 644 /etc/cron.d/datto-codebase-core", shell=True)
 # Get latest zfs snapshot and recursively send into another dataset from it.
 latestSnapshot = subprocess.check_output("zfs list -H -t snapshot -r -o name " + ZFS_AGENT_PATH + agent + "| tail -n1", shell=True).rstrip()
 subprocess.call("zfs send -R " + latestSnapshot + "| pv | zfs recv " + ZFS_AGENT_PATH + agent + "-retentionTesting", shell=True)
+
+# Create a new directory in /datto/config/keys and copy the key files to it for safe keeping.
+subprocess.call("mkdir " + CONFIG_KEYS + agent + "-retentionTesting", shell=True)
+subprocess.call("cp " + CONFIG_KEYS + agent + "* " + CONFIG_KEYS + agent + "-retentionTesting", shell=True)
+
+# Remove inhibitAllCron
+subprocess.call("rm /datto/config/inhibitAllCron", shell=True)
