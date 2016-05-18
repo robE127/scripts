@@ -70,3 +70,7 @@ for d in range(1,92):
 subprocess.call("ntpdate ntp.dattobackup.com", shell=True)
 subprocess.call("chmod 644 /etc/ntp.conf", shell=True)
 subprocess.call("chmod 644 /etc/cron.d/datto-codebase-core", shell=True)
+
+# Get latest zfs snapshot and recursively send into another dataset from it.
+latestSnapshot = subprocess.check_output("zfs list -H -t snapshot -r -o name " + ZFS_AGENT_PATH + agent + "| tail -n1", shell=True).rstrip()
+subprocess.call("zfs send -R " + latestSnapshot + "| pv | zfs recv " + ZFS_AGENT_PATH + agent + "-retentionTesting", shell=True)
