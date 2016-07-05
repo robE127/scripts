@@ -6,7 +6,8 @@ globalKeys=(maxBackups backupOffset useAdvancedAlerting cefActive
 agentKeys=(interval backupPause offsiteControl schedule retention
     offsiteRetention backupEngine screenshotVerification
     screenshotNotification emails include shareCompatibility
-    vboxSettings esxSettings writeCache doDiffMerge)
+    vboxSettings esxSettings writeCache doDiffMerge vssExclude legacyVM
+    snapTimeout)
 
 inotifywait -r -m -q -e close_write,create,delete /datto/config |
     while read -r directory events filename; do
