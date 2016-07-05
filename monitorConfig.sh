@@ -1,7 +1,7 @@
 #!/bin/bash
 
 globalKeys=(maxBackups backupOffset useAdvancedAlerting cefActive disableScreenshots useRDPConnection autoDiffMerge defaultTP)
-agentKeys=(interval backupPause offsiteControl)
+agentKeys=(interval backupPause offsiteControl schedule retention offsiteRetention backupEngine screenshotVerification emails include shareCompatibility vboxSettings esxSettings writeCache doDiff)
 
 inotifywait -r -m -q -e close_write,create,delete /datto/config |
     while read -r directory events filename; do
@@ -21,3 +21,4 @@ inotifywait -r -m -q -e close_write,create,delete /datto/config |
             done
         fi
     done
+
