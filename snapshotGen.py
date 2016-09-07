@@ -21,9 +21,11 @@ startDaysBack = int(raw_input("How many days back do you want to start your snap
 
 print("Now generating 3 snapshots every day from the specified amount of days...")
 
-subprocess.call("zfs destroy -r homePool/home/agents/" + agent, shell=True)
+subprocess.call("snapctl renameAgent " + agent + " retentionTesting", shell=True)
 
-subprocess.call("zfs create homePool/home/agents/" + agent, shell=True)
+subprocess.call("zfs destroy -r homePool/home/agents/retentionTesting", shell=True)
+
+subprocess.call("zfs create homePool/home/agents/retentionTesting", shell=True)
 
 now = calendar.timegm(time.gmtime())
 
@@ -36,18 +38,20 @@ dayStartTime = start
 while current < now:
     i = 0
     while i < 3:
-        subprocess.call("zfs snapshot homePool/home/agents/" + agent + "@" + str(current), shell=True)
+        subprocess.call("zfs snapshot homePool/home/agents/retentionTesting@" + str(current), shell=True)
         current += (60 * 60)
         i += 1
     dayStartTime += (24 * 60 * 60)
     current = dayStartTime
 
-subprocess.call("zfs list -t snapshot -r -o name -H homePool/home/agents/" + agent + " | xargs zfs set sync:devsnap=true", shell=True)
+subprocess.call("zfs list -t snapshot -r -o name -H homePool/home/agents/retentionTesting | xargs zfs set sync:devsnap=true", shell=True)
 
-subprocess.call("zfs list -t snapshot -r -o name -H  homePool/home/agents/" + agent + " | awk -F '@' '{print $2}' > /datto/config/keys/" + agent + ".recoveryPoints", shell=True)
+subprocess.call("zfs list -t snapshot -r -o name -H  homePool/home/agents/retentionTesting | awk -F '@' '{print $2}' > /datto/config/keys/retentionTesting.recoveryPoints", shell=True)
+
+subprocess.call("speedsync refresh homePool/home/agents/retentionTesting", shell=True)
 
 print("\nThe following snapshots have been generated:\n")
 
-subprocess.call("zfs list -t snapshot -r -o name homePool/home/agents/" + agent + " -H | awk -F '@' '{print $2}' | xargs -i date -d@{}", shell=True)
+subprocess.call("zfs list -t snapshot -r -o name homePool/home/agents/retentionTesting -H | awk -F '@' '{print $2}' | xargs -i date -d@{}", shell=True)
 
 print("\nHave Fun!\n")
