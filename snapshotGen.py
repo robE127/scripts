@@ -2,19 +2,19 @@
 
 import sys, subprocess, time, calendar, logging
 
-logging.basicConfig(level=logging.INFO, format='\n%(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='\033[0;36m' + '\n%(levelname)s - %(message)s' + '\033[0m')
 
 msg = (
 
+    '\33[0;31m'
     '\n      ***Please read carefully before using this script.***\n'
     'This script will delete all snapshots for the existing agent that you\n'
-    'specify below. It will then replace them with the fake snapshots created\n'
-    'via this script. It will replace the recoveryPoints key file with the new\n'
-    'snapshots\' epoch time. It will remove the transfers key file to avoid\n'
-    'potential issues. It will mark all of the snapshots with sync:devsnap=true\n'
-    'for speedsync. Be aware, the creation date zfs property will not be\n'
-    'accurate for the fake snapshots. This is not a problem because retention\n'
-    'runs based on the epcoh time in the snapshot name.\n')
+    'specify below. It will then replace them with the snapshots created\n'
+    'via this script. Be aware, the creation date zfs property will not be\n'
+    'accurate for these snapshots. This is not a problem because retention\n'
+    'runs based on the epoch time in the snapshot name.\n'
+    '\33[0m'
+)
 
 print(msg)
 
@@ -22,11 +22,14 @@ print("\nPress CTRL+C to exit at any time.\n")
 
 try:
 
-    agent = str(raw_input("\nWhat agent would you like to use with the fake snapshots? "))
+    agent = str(raw_input("\nWhat existing agent would you like to create snapshots for? "))
 
     startDaysBack = int(raw_input("\nHow many days back do you want to start your snapshots? "))
 
     snapsPerDay = int(raw_input("\nHow many snapshots do you want to create per day? "))
+
+    logging.info('Touching inhibitAllCron')
+    subprocess.call("touch /datto/config/inhibitAllCron", shell=True)
 
     logging.info('Removing any existing homePool/retentionTesting dataset...')
     subprocess.call("zfs destroy -r homePool/retentionTesting", shell=True)
@@ -53,20 +56,26 @@ try:
         dayStartTime += (24 * 60 * 60)
         current = dayStartTime
 
-
-    logging.info('Setting all sync:devsnap=true...')
-    subprocess.call("zfs list -t snapshot -r -o name -H homePool/retentionTesting | xargs zfs set sync:devsnap=true", shell=True)
+    # Uncomment if you want to sync these snapshots offsite
+    #logging.info('Setting all sync:devsnap=true...')
+    #subprocess.call("zfs list -t snapshot -r -o name -H homePool/retentionTesting | xargs zfs set sync:devsnap=true", shell=True)
 
     logging.info('Destroying zfs dataset for specified agent...')
-    subprocess.call('zfs destroy -r homePool/home/agents/' + agent, shell=True)
+    subprocess.call("zfs destroy -r homePool/home/agents/" + agent, shell=True)
 
     logging.info('Zfs sending retentionTesting dataset...')
-    subprocess.call('zfs send -R homePool/retentionTesting@' + lastSnap + ' | pv | zfs recv homePool/home/agents/' + agent, shell=True)
+    subprocess.call("zfs send -R homePool/retentionTesting@" + lastSnap + " |  zfs recv homePool/home/agents/" + agent, shell=True)
 
     logging.info('Generating new recoveryPoints key file...')
     subprocess.call("zfs list -t snapshot -r -o name -H  homePool/home/agents/" + agent + " | awk -F '@' '{print $2}' > /datto/config/keys/" + agent + ".recoveryPoints", shell=True)
 
-    logging.info('Snapshots for the following times have been created for homePool/home/agents/' + agent + ':\n')
+    logging.info('Blanking out the transfers key file...')
+    subprocess.call("echo '' > /datto/config/keys/" + agent + ".transfers", shell=True)
+
+    logging.info('Removing inhibitAllCron...')
+    subprocess.call("rm /datto/config/inhibitAllCron", shell=True)
+
+    logging.info(str(snapsPerDay * startDaysBack) + ' snapshots with the following timestamps have been created for homePool/home/agents/' + agent + ':\n')
     subprocess.call("zfs list -t snapshot -r -o name -H homePool/home/agents/" + agent + " | awk -F '@' '{print $2}' | xargs -i date -d@{}", shell=True)
 
     print("\nHave Fun!\n")
